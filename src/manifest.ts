@@ -3,6 +3,23 @@ import { Type } from "@sinclair/typebox";
 
 export const manifest = defineManifest()({
   contract: 2,
+  discovery: {
+    audiences: ["agent-hosts", "security-teams"],
+    intents: [
+      "sandbox agent actions",
+      "restrict agent network access",
+      "restrict agent processes",
+    ],
+    keywords: [
+      "agents",
+      "sandbox",
+      "capabilities",
+      "http",
+      "filesystem",
+      "process",
+    ],
+    protocols: ["AbsoluteJS Agent Capabilities"],
+  },
   identity: {
     name: "@absolutejs/agent-sandbox",
     category: "security",
@@ -13,8 +30,5 @@ export const manifest = defineManifest()({
     accent: "#ef4444",
   },
   settings: Type.Object({}),
-  slots: {},
-  implements: [],
-  tools: {},
   wiring: [],
 });
