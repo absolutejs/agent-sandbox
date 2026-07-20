@@ -5,7 +5,9 @@ one durable run and one signed agent identity, expire, carry per-capability use
 limits, and are verified through an issuer-agnostic callback.
 
 HTTP access is restricted by origin, method, path, body/response size, and
-credential alias. Filesystem access uses boundary-safe absolute roots. Process
+credential binding. Each broker alias is bound to an exact header or process
+input name; transport-controlled headers and process-loader variables remain
+denied even if requested. Filesystem access uses boundary-safe absolute roots. Process
 access uses exact executable allowlists, argument prefixes, working roots,
 timeouts, and output limits. Credentials are resolved inside adapters and never
 returned to the agent.

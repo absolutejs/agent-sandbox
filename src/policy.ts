@@ -32,12 +32,17 @@ const originMatches = (allowed: string, url: URL) => {
 };
 
 const checkCredentials = (
-  allowed: string[] | undefined,
+  allowed: Record<string, string[]> | undefined,
   requested: Record<string, string> | undefined,
+  normalizeName: (value: string) => string,
 ) => {
-  for (const alias of Object.values(requested ?? {})) {
-    if (!allowed?.includes(alias))
-      throw new Error(`Credential alias is not granted: ${alias}`);
+  for (const [name, alias] of Object.entries(requested ?? {})) {
+    const normalized = normalizeName(name);
+    const binding = Object.entries(allowed ?? {}).find(
+      ([candidate]) => normalizeName(candidate) === normalized,
+    )?.[1];
+    if (!binding?.includes(alias))
+      throw new Error(`Credential binding is not granted: ${name} -> ${alias}`);
   }
 };
 
@@ -93,7 +98,16 @@ const authorizeHttp = (
   }
   if (byteLength(action.body) > (capability.maxRequestBytes ?? 1_048_576))
     throw new Error("HTTP request body exceeds grant");
-  checkCredentials(capability.credentialAliases, action.credentials);
+  for (const name of Object.keys(action.credentials ?? {})) {
+    if (
+      forbiddenHeaders.has(name.toLowerCase()) &&
+      name.toLowerCase() !== "authorization"
+    )
+      throw new Error(`Credential target header is denied: ${name}`);
+  }
+  checkCredentials(capability.credentialBindings, action.credentials, (value) =>
+    value.toLowerCase(),
+  );
 };
 
 const authorizeFilesystem = (
@@ -133,7 +147,24 @@ const authorizeProcess = (
     !capability.workingDirectories?.some((root) => within(root, action.cwd!))
   )
     throw new Error("Working directory is not granted");
-  checkCredentials(capability.credentialAliases, action.credentials);
+  const forbiddenCredentialTargets = new Set([
+    "PATH",
+    "LD_PRELOAD",
+    "NODE_OPTIONS",
+    "BUN_OPTIONS",
+  ]);
+  for (const name of Object.keys(action.credentials ?? {})) {
+    if (
+      forbiddenCredentialTargets.has(name.toUpperCase()) ||
+      name.toUpperCase().startsWith("DYLD_")
+    )
+      throw new Error(`Process credential target is denied: ${name}`);
+  }
+  checkCredentials(
+    capability.credentialBindings,
+    action.credentials,
+    (value) => value,
+  );
 };
 
 export const authorizeAgentSandboxAction = (

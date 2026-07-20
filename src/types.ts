@@ -10,7 +10,8 @@ export type HttpCapability = {
   origins: string[];
   methods?: string[];
   pathPrefixes?: string[];
-  credentialAliases?: string[];
+  /** Exact header name to permitted broker credential aliases. */
+  credentialBindings?: Record<string, string[]>;
   maxRequestBytes?: number;
   maxResponseBytes?: number;
   maxUses?: number;
@@ -31,7 +32,8 @@ export type ProcessCapability = {
   executables: string[];
   argumentPrefixes?: string[][];
   workingDirectories?: string[];
-  credentialAliases?: string[];
+  /** Exact environment/input name to permitted broker credential aliases. */
+  credentialBindings?: Record<string, string[]>;
   timeoutMs?: number;
   maxOutputBytes?: number;
   maxUses?: number;

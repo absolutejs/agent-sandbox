@@ -24,7 +24,7 @@ const grant = {
       origins: ["https://api.example.com"],
       methods: ["POST"],
       pathPrefixes: ["/v1/messages"],
-      credentialAliases: ["service-token"],
+      credentialBindings: { authorization: ["service-token"] },
       maxUses: 1,
     },
   ],
@@ -114,6 +114,42 @@ describe("agent sandbox", () => {
       }),
     ).rejects.toThrow("limit");
     expect(calls).toBe(1);
+  });
+
+  test("binds credential aliases to exact safe destinations", async () => {
+    const sandbox = createAgentSandbox({
+      store: createMemoryAgentSandboxOperationStore(),
+      adapters: { http: { execute: async () => undefined } },
+      verifyGrant: () => true,
+      resolveCredential: async () => "secret",
+      now: () => Date.parse("2026-07-15T12:00:00.000Z"),
+    });
+    await expect(
+      sandbox.execute({
+        grant,
+        action: {
+          kind: "http",
+          capabilityId: "api",
+          requestId: "host-injection",
+          url: "https://api.example.com/v1/messages",
+          method: "POST",
+          credentials: { host: "service-token" },
+        },
+      }),
+    ).rejects.toThrow("target header is denied");
+    await expect(
+      sandbox.execute({
+        grant,
+        action: {
+          kind: "http",
+          capabilityId: "api",
+          requestId: "cookie-injection",
+          url: "https://api.example.com/v1/messages",
+          method: "POST",
+          credentials: { "x-api-key": "service-token" },
+        },
+      }),
+    ).rejects.toThrow("binding is not granted");
   });
 
   test("does not replay an ambiguous adapter failure", async () => {
